@@ -18,8 +18,8 @@ static inline double deg2rad(double deg) {
 
 Simulator_HIRES::Simulator_HIRES(const osiSockAddr& ep,
               const JBlob& blob,
-              const values_t& initial)
-    :Simulator(ep, blob, initial)
+              const values_t& initial, bool rom2)
+    :Simulator(ep, blob, initial, rom2)
 {
     banyan.reset = &(*this)["banyan_reset"];
     banyan.reset_bit = 0u;

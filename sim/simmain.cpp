@@ -41,8 +41,9 @@ int main(int argc, char *argv[])
         endpoint.ia.sin_family = AF_INET;
         endpoint.ia.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
         endpoint.ia.sin_port = htons(50006);
+        bool bigRom = false;
 
-        while((opt=getopt(argc, argv, "hH:dL:S:"))!=-1) {
+        while((opt=getopt(argc, argv, "hH:dL:S:B"))!=-1) {
             switch(opt) {
             case 'H':
                 if(aToIPAddr(optarg, 50006, &endpoint.ia))
@@ -57,6 +58,9 @@ int main(int argc, char *argv[])
             case 'S':
                 if(epicsParseDouble(optarg, &slowdown, 0))
                     throw std::runtime_error("-S value must be a number");
+                break;
+            case 'B':
+                bigRom = true;
                 break;
             default:
                 std::cerr<<"Unknown option '"<<opt<<"'\n\n";
@@ -124,7 +128,7 @@ int main(int argc, char *argv[])
 
         feed::auto_ptr<Simulator> sim;
         if(logic=="none") {
-            sim.reset(new Simulator(endpoint, blob, initial));
+            sim.reset(new Simulator(endpoint, blob, initial, bigRom));
         } else if(logic=="rfs") {
             sim.reset(new Simulator_RFS(endpoint, blob, initial));
         } else if(logic=="hires") {

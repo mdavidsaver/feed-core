@@ -29,7 +29,8 @@ SimReg::SimReg(const JRegister& reg)
         throw std::runtime_error(SB()<<name<<" has inconsistent base "<<base<<" and addr_width "<<reg.addr_width);
 }
 
-Simulator::Simulator(const osiSockAddr& ep, const JBlob& blob, const values_t &initial)
+Simulator::Simulator(const osiSockAddr& ep, const JBlob& blob, const values_t &initial,
+                     bool rom2)
     :debug(false)
     ,slowdown(0.0)
     ,running(false)
@@ -54,7 +55,7 @@ Simulator::Simulator(const osiSockAddr& ep, const JBlob& blob, const values_t &i
         add(temp);
     }
 
-    {
+    if(!rom2) {
         SimReg temp;
         temp.name = "ROM";
         temp.base = 0x0800;
@@ -62,6 +63,23 @@ Simulator::Simulator(const osiSockAddr& ep, const JBlob& blob, const values_t &i
         temp.readable = true;
         temp.storage.resize(0x800);
         add(temp);
+
+    } else {
+        SimReg canery;
+        canery.name = "oldRom";
+        canery.base = 0x0800;
+        canery.mask = 0xffff;
+        canery.readable = true;
+        canery.storage.resize(0x800);
+        add(canery);
+
+        SimReg rom;
+        rom.name = "ROM";
+        rom.base = 0x4000;
+        rom.mask = 0xffff;
+        rom.readable = true;
+        rom.storage.resize(0x4000);
+        add(rom);
     }
 
     const SimReg& romreg((*this)["ROM"]);
@@ -76,7 +94,6 @@ Simulator::Simulator(const osiSockAddr& ep, const JBlob& blob, const values_t &i
         SimReg& reg = *rit->second;
         if(&reg==&romreg)
             continue; // don't override rom
-        assert(reg.base!=0x800);
 
         epicsUInt32 offset = rit->first - reg.base;
 

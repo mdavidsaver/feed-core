@@ -18,8 +18,8 @@ static inline double deg2rad(double deg) {
 
 Simulator_RFS::Simulator_RFS(const osiSockAddr& ep,
               const JBlob& blob,
-              const values_t& initial)
-    :Simulator(ep, blob, initial)
+              const values_t& initial, bool rom2)
+    :Simulator(ep, blob, initial, rom2)
 #define INITREG(NAME) ,NAME((*this)[#NAME])
     INITREG(circle_buf_flip)
     INITREG(llrf_circle_ready)

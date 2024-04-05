@@ -43,7 +43,8 @@ public:
      */
     Simulator(const osiSockAddr& ep,
               const JBlob& blob,
-              const values_t& initial);
+              const values_t& initial,
+              bool rom2=false);
     virtual ~Simulator();
 
     // manually add a register (in addition to those defined in JBlob)
@@ -96,7 +97,8 @@ class epicsShareClass Simulator_RFS : public Simulator
 public:
     Simulator_RFS(const osiSockAddr& ep,
                   const JBlob& blob,
-                  const values_t& initial);
+                  const values_t& initial,
+                  bool rom2 = false);
     virtual ~Simulator_RFS();
 
 private:
@@ -120,7 +122,8 @@ class epicsShareClass Simulator_HIRES : public Simulator
 public:
     Simulator_HIRES(const osiSockAddr& ep,
                   const JBlob& blob,
-                  const values_t& initial);
+                  const values_t& initial,
+                  bool rom2 = false);
     virtual ~Simulator_HIRES();
 
 private:
