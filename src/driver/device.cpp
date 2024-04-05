@@ -28,7 +28,7 @@ const size_t pkt_size_limit = (DevMsg::nreg+1)*8;
 
 // description of automatic/bootstrap registers
 const struct gblrom_t {
-    JRegister jrom2_info, jrom16_info;
+    JRegister jrom2_test_info, jrom2_info, jrom16_info;
     JRegister jid_info;
     gblrom_t() {
         jid_info.name = "HELLO";
@@ -43,8 +43,13 @@ const struct gblrom_t {
         // valid ROM. Thus, we first attempt to parse the ROM at the original
         // 0x800 location and move on to 0x4000 if unsuccessful.
 
-        // TODO: A useful optimization would be to only avoid reading null data
-        // to minimize traffic over the wire
+        jrom2_test_info.name = "ROM 2K probe";
+        jrom2_test_info.description = "Test for ROM 2K";
+        jrom2_test_info.base_addr = 0x800;
+        jrom2_test_info.addr_width = 0; // 1 words
+        jrom2_test_info.data_width = 16;
+        jrom2_test_info.readable = true;
+
         jrom2_info.name = "ROM 2K";
         jrom2_info.description = "Static configuration";
         jrom2_info.base_addr = 0x800;
@@ -231,6 +236,7 @@ Device::Device(const std::string &name, osiSockAddr &ep)
     ,cnt_timo(0u)
     ,cnt_err(0u)
     ,rtt_ptr(0u)
+    ,reg_rom2test(new DevReg(this, gblrom.jrom2_test_info, true))
     ,reg_rom2(new DevReg(this, gblrom.jrom2_info, true))
     ,reg_rom16(new DevReg(this, gblrom.jrom16_info, true))
     ,reg_id(new DevReg(this, gblrom.jid_info, true))
@@ -644,17 +650,19 @@ void Device::do_timeout(unsigned i)
 void Device::handle_inspect(Guard &G)
 {
     // Process ROM to extract JSON
+    DevReg *romreg;
+    if(reg_rom2->state==DevReg::InSync) {
+        romreg = reg_rom2.get();
 
-    ROM rom2, rom16, rom;
+    } else if(reg_rom16->state==DevReg::InSync) {
+        romreg = reg_rom16.get();
 
-    // Try to decode ROM starting at 0x800 and then 0x4000
-    rom2.parse((char*)&reg_rom2->mem_rx[0], reg_rom2->mem_rx.size()*4);
-    if (rom2.begin() != rom2.end()) {
-        rom = rom2;
     } else {
-        rom16.parse((char*)&reg_rom16->mem_rx[0], reg_rom16->mem_rx.size()*4);
-        rom = rom16;
+        throw std::logic_error("handle_inspect w/o ROM");
     }
+
+    ROM rom;
+    rom.parse((char*)&romreg->mem_rx[0], romreg->mem_rx.size()*4);
 
     std::string json;
 
@@ -811,20 +819,26 @@ void Device::handle_state(Guard &G)
         break;
 
     case Searching:
-        if(reg_id->state==DevReg::InSync) {
-            // InSync means reply received
-            reg_rom2->queue(false);
-            reg_rom16->queue(false);
+        if(reg_rom2test->state==DevReg::InSync) {
+            // InSync means reply received.
+            if(reg_rom2test->mem_rx[0]==0) {
+                // 0x800 empty, ROM at 0x4000
+                reg_rom16->queue(false);
+            } else {
+                reg_rom2->queue(false);
+            }
             current = Inspecting;
+            // special handing since rom2test not in reg_by_name
+            reg_rom2test->state = DevReg::Invalid;
 
-        }else if(!reg_id->inprogress()) {
+        }else if(!reg_rom2test->inprogress()) {
             // Timeout.  request again
-            reg_id->queue(false);
+            reg_rom2test->queue(false);
         }
         break;
 
     case Inspecting:
-        if(reg_rom2->state==DevReg::InSync && reg_rom16->state==DevReg::InSync) {
+        if(reg_rom2->state==DevReg::InSync || reg_rom16->state==DevReg::InSync) {
             handle_inspect(G);
             IFDBG(3, "Request on_connect scan");
             scanIoRequest(on_connect);
