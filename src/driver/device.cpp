@@ -349,6 +349,8 @@ void Device::reset(bool error)
         }
     }
 
+    reg_rom2test->reset();
+
     // restart with only automatic/bootstrap registers
     reg_by_name.clear();
     reg_by_name[reg_id->info.name] = reg_id.get();
