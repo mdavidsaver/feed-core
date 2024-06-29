@@ -47,7 +47,7 @@
 namespace {
 
 template<typename Rec>
-struct RecRegInfo : public RecInfo
+struct RecRegInfo final : public RecInfo
 {
     RecRegInfo(dbCommon *prec, Device *device)
         :RecInfo(prec, device)
@@ -334,7 +334,24 @@ void maybePost(dbCommon *prec, fld_t *fld, epicsInt64 value)
     }
 }
 
+void persistSettings(RecInfo *info)
+{
+    dbCommon *prec = info->prec;
+    if(prec->udf)
+        return; // do not persist undefined/invalid
+
+    IFDBG(6, "Persisting");
+
+    const dset6<dbCommon> * dset = reinterpret_cast<dset6<dbCommon>*>(prec->dset);
+
+    bool save = info->commit;
+    info->commit = false;
+    dset->readwrite(prec);
+    info->commit = save;
+}
+
 template<> void RecRegInfo<longoutRecord>::connected() {
+    persistSettings(this);
     if(meta) {
         longoutRecord *prec = (longoutRecord*)this->prec;
         assert(reg);
@@ -345,10 +362,10 @@ template<> void RecRegInfo<longoutRecord>::connected() {
     }
 }
 
-template<> void RecRegInfo<aoRecord>::connected() {}
-template<> void RecRegInfo<boRecord>::connected() {}
-template<> void RecRegInfo<mbboRecord>::connected() {}
-template<> void RecRegInfo<aaoRecord>::connected() {}
+template<> void RecRegInfo<aoRecord>::connected() { persistSettings(this);}
+template<> void RecRegInfo<boRecord>::connected() { persistSettings(this); }
+template<> void RecRegInfo<mbboRecord>::connected() { persistSettings(this); }
+template<> void RecRegInfo<aaoRecord>::connected() { persistSettings(this); }
 
 template<> void RecRegInfo<longinRecord>::connected() {
     if(meta) {
