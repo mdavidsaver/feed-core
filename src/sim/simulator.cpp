@@ -64,6 +64,16 @@ Simulator::Simulator(const osiSockAddr& ep, const JBlob& blob, const values_t &i
         add(temp);
     }
 
+    {
+        SimReg temp;
+        temp.name = "ROMEXT";
+        temp.base = 0x4000;
+        temp.mask = 0x4000;
+        temp.readable = true;
+        temp.storage.resize(0x4000);
+        add(temp);
+    }
+
     const SimReg& romreg((*this)["ROM"]);
 
     for(values_t::const_iterator it=initial.begin(), end=initial.end(); it!=end; ++it)
