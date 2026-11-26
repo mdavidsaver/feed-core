@@ -1,10 +1,5 @@
 
 #include <stdexcept>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <map>
-#include <stdexcept>
 
 #include <stdio.h>
 
@@ -30,6 +25,8 @@
 #include <longoutRecord.h>
 #include <mbbiRecord.h>
 #include <mbboRecord.h>
+#include <mbbiDirectRecord.h>
+#include <mbboDirectRecord.h>
 #include <biRecord.h>
 #include <boRecord.h>
 #include <aiRecord.h>
@@ -177,6 +174,12 @@ long write_register_bo(boRecord *prec)
 long write_register_mbbo(mbboRecord *prec)
 {
     return write_register_common((dbCommon*)prec, (char*)&prec->rval, 1, menuFtypeULONG);
+}
+
+long write_register_mbboDirect(mbboDirectRecord *prec)
+{
+    return write_register_common((dbCommon*)prec, (char*)&prec->rval, 1,
+                                 sizeof(prec->rval)==4 ? menuFtypeULONG : menuFtypeUSHORT);
 }
 
 long write_register_aao(aaoRecord *prec)
@@ -329,6 +332,12 @@ long read_register_mbbi(mbbiRecord *prec)
     return read_register_common((dbCommon*)prec, (char*)&prec->rval, 0, menuFtypeULONG);
 }
 
+long read_register_mbbiDirect(mbbiDirectRecord *prec)
+{
+    return read_register_common((dbCommon*)prec, (char*)&prec->rval, 0,
+                                sizeof(prec->rval)==4 ? menuFtypeULONG : menuFtypeUSHORT);
+}
+
 long read_register_aai(aaiRecord *prec)
 {
     size_t cnt = prec->nelm;
@@ -396,6 +405,7 @@ template<> void RecRegInfo<longoutRecord>::connected() {
 template<> void RecRegInfo<aoRecord>::connected() { ScanLock G(prec); persistSettings(this);}
 template<> void RecRegInfo<boRecord>::connected() { ScanLock G(prec); persistSettings(this); }
 template<> void RecRegInfo<mbboRecord>::connected() { ScanLock G(prec); persistSettings(this); }
+template<> void RecRegInfo<mbboDirectRecord>::connected() { ScanLock G(prec); persistSettings(this); }
 template<> void RecRegInfo<aaoRecord>::connected() { ScanLock G(prec); persistSettings(this); }
 
 template<> void RecRegInfo<longinRecord>::connected() {
@@ -411,6 +421,7 @@ template<> void RecRegInfo<longinRecord>::connected() {
 template<> void RecRegInfo<aiRecord>::connected() {}
 template<> void RecRegInfo<biRecord>::connected() {}
 template<> void RecRegInfo<mbbiRecord>::connected() {}
+template<> void RecRegInfo<mbbiDirectRecord>::connected() {}
 template<> void RecRegInfo<aaiRecord>::connected() {}
 
 } // namespace
@@ -420,6 +431,8 @@ DSET(devLoFEEDWriteReg, longout, init_common<RecRegInfo<longoutRecord> >::fn, NU
 DSET(devAoFEEDWriteReg, ao, init_common<RecRegInfo<aoRecord> >::fn, NULL, write_register_ao)
 DSET(devBoFEEDWriteReg, bo, init_common<RecRegInfo<boRecord> >::fn, NULL, write_register_bo)
 DSET(devMbboFEEDWriteReg, mbbo, init_common<RecRegInfo<mbboRecord> >::fn, NULL, write_register_mbbo)
+DSET(devMbboDirectFEEDWriteReg, mbboDirect, init_common<RecRegInfo<mbboDirectRecord> >::fn, NULL,
+     write_register_mbboDirect)
 DSET(devAaoFEEDWriteReg, aao, init_common<RecRegInfo<aaoRecord> >::fn, NULL, write_register_aao)
 DSET(devBoFEEDFlushReg, bo, init_common<RecRegInfo<boRecord> >::fn, NULL, flush_register_bo)
 
@@ -428,4 +441,6 @@ DSET(devLiFEEDWriteReg, longin, init_common<RecRegInfo<longinRecord> >::fn, get_
 DSET(devAiFEEDWriteReg, ai, init_common<RecRegInfo<aiRecord> >::fn, get_reg_changed_intr, read_register_ai)
 DSET(devBiFEEDWriteReg, bi, init_common<RecRegInfo<biRecord> >::fn, get_reg_changed_intr, read_register_bi)
 DSET(devMbbiFEEDWriteReg, mbbi, init_common<RecRegInfo<mbbiRecord> >::fn, get_reg_changed_intr, read_register_mbbi)
+DSET(devMbbiDirectFEEDWriteReg, mbbiDirect, init_common<RecRegInfo<mbbiDirectRecord> >::fn, get_reg_changed_intr,
+     read_register_mbbiDirect)
 DSET(devAaiFEEDWriteReg, aai, init_common<RecRegInfo<aaiRecord> >::fn, get_reg_changed_intr, read_register_aai)

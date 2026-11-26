@@ -28,6 +28,7 @@ device(longout, INST_IO, devLoFEEDWriteReg, "FEED Register Write")
 device(ao, INST_IO, devAoFEEDWriteReg, "FEED Register Write")
 device(bo, INST_IO, devBoFEEDWriteReg, "FEED Register Write")
 device(mbbo, INST_IO, devMbboFEEDWriteReg, "FEED Register Write")
+device(mbboDirect, INST_IO, devMbboDirectFEEDWriteReg, "FEED Register Write")
 device(aao, INST_IO, devAaoFEEDWriteReg, "FEED Register Write")
 
 # register reads
@@ -35,6 +36,7 @@ device(longin, INST_IO, devLiFEEDWriteReg, "FEED Register Read")
 device(ai, INST_IO, devAiFEEDWriteReg, "FEED Register Read")
 device(bi, INST_IO, devBiFEEDWriteReg, "FEED Register Read")
 device(mbbi, INST_IO, devMbbiFEEDWriteReg, "FEED Register Read")
+device(mbbiDirect, INST_IO, devMbbiDirectFEEDWriteReg, "FEED Register Read")
 device(aai, INST_IO, devAaiFEEDWriteReg, "FEED Register Read")
 
 # register special

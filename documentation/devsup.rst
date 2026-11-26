@@ -68,7 +68,7 @@ into UDP packets.
 FEED Register Read
 ~~~~~~~~~~~~~~~~~~
 
-Supported for record types: longin, ai (RVAL), mbbi (RVAL), and aai.
+Supported for record types: longin, ai (RVAL), mbbi (RVAL), mbbiDirect (RVAL), and aai.
 
 Asynchronous device support when ``wait=true`` (default), initiate
 register read. Synchronous when ``wait=false``, read from local cache.
@@ -109,7 +109,7 @@ For ``aai`` record type. Supported ``FTVL`` are: ``CHAR``, ``UCHAR``,
 FEED Register Write
 ~~~~~~~~~~~~~~~~~~~
 
-Supported for record types: longout, ao (RVAL), mbbo (RVAL), and aao.
+Supported for record types: longout, ao (RVAL), mbbo (RVAL), mbboDirect (RVAL), and aao.
 
 Asynchronous device support when ``wait=true`` (default), wait for
 register write operation to complete. Synchronous when ``wait=false``,
