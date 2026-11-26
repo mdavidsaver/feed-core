@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <errlog.h>
+#include <epicsThread.h>
 #include <dbUnitTest.h>
 #include <dbAccess.h>
 #include <dbChannel.h>
@@ -21,6 +22,24 @@
 #endif
 
 namespace {
+
+struct TestSim : public Simulator {
+    TestSim(const osiSockAddr& ep,
+              const JBlob& blob,
+              const values_t& initial)
+        :Simulator(ep, blob, initial)
+    {}
+    virtual ~TestSim() {}
+
+protected:
+    void reg_write(SimReg &reg, epicsUInt32 offset, epicsUInt32 newval) override final
+    {
+        if(reg.name=="clip")
+            newval &= 0xf;
+        this->Simulator::reg_write(reg, offset, newval);
+    }
+};
+
 struct simrunner : public epicsThreadRunable {
     osiSockAddr endpoint;
     PrintAddr addr;
@@ -50,7 +69,7 @@ struct simrunner : public epicsThreadRunable {
         rom.push_back(ROMDescriptor::BigInt, "0000000000000000000000000000000000000000");
         rom.push_back(ROMDescriptor::JSON, json);
 
-        instance.reset(new Simulator(endpoint, blob, initial));
+        instance.reset(new TestSim(endpoint, blob, initial));
 
         // copy in ROM image
         {
@@ -100,7 +119,22 @@ struct Channel {
         return ret;
     }
 };
+
+void waitFor(const char *rname) {
+    while(1) {
+        dbCommon *prec = testdbRecordPtr(rname);
+        int pact;
+        {
+            ScanLock G(prec);
+            pact = prec->pact;
+        }
+        if(!pact)
+            break;
+        epicsThreadSleep(0.1);
+    }
 }
+
+} // namespace
 
 extern "C" {
 void testfeed_registerRecordDeviceDriver(struct dbBase *);
@@ -108,7 +142,7 @@ void testfeed_registerRecordDeviceDriver(struct dbBase *);
 
 MAIN(testdevice)
 {
-    testPlan(7);
+    testPlan(10);
     try {
         simrunner sim;
 
@@ -150,19 +184,17 @@ MAIN(testdevice)
         testdbGetFieldEqual("tst:HelloInt-I", DBF_LONG, 0x48656c6c);
 
         testdbPutFieldOk("tst:One-SP", DBF_LONG, 0x12345678);
-        while(1) {
-            dbCommon *prec = testdbRecordPtr("tst:One-SP");
-            int pact;
-            {
-                ScanLock G(prec);
-                pact = prec->pact;
-            }
-            if(!pact)
-                break;
-        }
+        testdbPutFieldOk("tst:Clip-SP", DBF_LONG, 0x1ff);
+        waitFor("tst:One-SP");
+        waitFor("tst:Clip-SP");
 
         testOk((*sim.instance)["one"].storage[0]==0x12345678,
                 "one[0] == %08x", (unsigned)(*sim.instance)["one"].storage[0]);
+
+        testOk((*sim.instance)["clip"].storage[0]==0x00f,
+               "clip[0] == %08x", (unsigned)(*sim.instance)["clip"].storage[0]);
+
+        testdbGetFieldEqual("tst:Clip-SP", DBF_LONG, 0x00f);
 
         //dev->show(std::cerr);
 

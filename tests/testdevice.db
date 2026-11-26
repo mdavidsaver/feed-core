@@ -7,3 +7,8 @@ record(longout, "$(PREF)One-SP") {
     field(DTYP, "FEED Register Write")
     field(OUT , "@name=$(NAME) reg=one")
 }
+
+record(longout, "$(PREF)Clip-SP") {
+    field(DTYP, "FEED Register Write")
+    field(OUT , "@name=$(NAME) reg=clip wait=true rbv=true")
+}

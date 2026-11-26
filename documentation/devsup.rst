@@ -44,9 +44,7 @@ Valid keys are:
    ``DOUBLE``. Default ``1.0``.
 -  ``commit=`` Boolean.  See below.
 -  ``wait=`` Boolean. See below.
--  ``rbv=`` Boolean. Input records only. ``false`` (default), use value
-   from previous read op. ``true``, use value from previous write
-   (combine with ``I/O Intr`` for readback of setting)
+-  ``rbv=`` Boolean.  See below.
 -  ``signal=`` “signal” name in IOC JSON blob. Omitted when not set.
 -  ``meta=``. Boolean. Update record meta-data fields from Device JSON
    when entering Running state. Default ``false``.
@@ -75,13 +73,17 @@ Supported for record types: longin, ai (RVAL), mbbi (RVAL), and aai.
 Asynchronous device support when ``wait=true`` (default), initiate
 register read. Synchronous when ``wait=false``, read from local cache.
 
+With ``rbv=false`` (default), normal read.
+With ``rbv=true``, no read.  Use value from previous write.
+Combine with ``SCAN=I/O Intr`` for readback of setting.
+
 On scan, request read of the named register. Processing completes on
 success, with updated VAL/RVAL, or an ``INVALID`` alarm on timeout.
 
-When ``SCAN`` set to ``I/O Intr``, record will be processed when after
+When ``SCAN=I/O Intr``, record will be processed when after
 the named register has been read for any reason (eg. some other record)
 using the value returned by that operation. Or an ``INVALID`` alarm on
-timeout.
+timeout.  (does not apply with ``rbv=true``)
 
 For ``aai`` record type. Supported ``FTVL`` are: ``CHAR``, ``UCHAR``,
 ``SHORT``, ``USHORT``, ``LONG``, ``ULONG``, or ``DOUBLE``. Link options
@@ -112,6 +114,10 @@ Supported for record types: longout, ao (RVAL), mbbo (RVAL), and aao.
 Asynchronous device support when ``wait=true`` (default), wait for
 register write operation to complete. Synchronous when ``wait=false``,
 initiate write and immediately continue.
+
+With the combination of ``wait=true rbv=true``, a write and then read operation are queued.
+Record processing waits for the read to complete, and then updates the record VAL field
+with the value read back.
 
 On scan, request write of the named register. Processing completes on
 success, with updated VAL/RVAL, or an ``INVALID`` alarm on timeout.

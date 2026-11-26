@@ -5,5 +5,12 @@
         "base_addr": 32,
         "data_width": 32,
         "sign": "unsigned"
+    },
+    "clip": {
+        "access": "rw",
+        "addr_width": 0,
+        "base_addr": 50,
+        "data_width": 32,
+        "sign": "unsigned"
     }
 }

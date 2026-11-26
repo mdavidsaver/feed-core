@@ -46,6 +46,8 @@
 
 namespace {
 
+long read_register_common(dbCommon *prec, char *raw, size_t *count, menuFtype ftvl);
+
 template<typename Rec>
 struct RecRegInfo final : public RecInfo
 {
@@ -65,7 +67,7 @@ struct RecRegInfo final : public RecInfo
     errlogPrintf("%s: Error %s\n", prec->name, e.what()); info->cleanup(); return 0; }
 
 
-long write_register_common(dbCommon *prec, const char *raw, size_t count, menuFtype ftvl)
+long write_register_common(dbCommon *prec, char *raw, size_t count, menuFtype ftvl)
 {
     const unsigned valsize = dbValueSize(ftvl);
     TRY {
@@ -88,6 +90,8 @@ long write_register_common(dbCommon *prec, const char *raw, size_t count, menuFt
             IFDBG(6, "No association");
         } else if(!info->reg->info.writable) {
             IFDBG(6, "Not writable");
+        } else if(info->rbv && !info->reg->info.readable) {
+            IFDBG(6, "Not readable");
         } else if(info->offset >= info->reg->mem_tx.size()
                 || count > info->reg->mem_tx.size() - info->offset) {
             IFDBG(6, "Array bounds violation offset=%u size=%zu not within size=%zu",
@@ -120,13 +124,23 @@ long write_register_common(dbCommon *prec, const char *raw, size_t count, menuFt
                 }
 
                 if(info->commit) {
-                    info->reg->queue(true, info->wait ? info : 0);
+                    // queue write, and maybe read.  Pass completion info with last
+                    info->reg->queue(true, info->wait && !info->rbv ? info : 0);
+                    if(info->wait && info->rbv)
+                        info->reg->queue(false, info);
 
                     if(info->wait && info->device->active()) {
                         prec->pact = 1;
                         IFDBG(6, "begin async");
                     }
                 }
+
+            } else if(info->rbv) {
+                // async completion with RBV
+                info->rbv = false;
+                long ret = read_register_common(prec, raw, &count, ftvl);
+                info->rbv = true;
+                return ret;
 
             } else {
                 // async completion
@@ -147,27 +161,27 @@ long write_register_common(dbCommon *prec, const char *raw, size_t count, menuFt
 
 long write_register_lo(longoutRecord *prec)
 {
-    return write_register_common((dbCommon*)prec, (const char*)&prec->val, 1, menuFtypeLONG);
+    return write_register_common((dbCommon*)prec, (char*)&prec->val, 1, menuFtypeLONG);
 }
 
 long write_register_ao(aoRecord *prec)
 {
-    return write_register_common((dbCommon*)prec, (const char*)&prec->rval, 1, menuFtypeLONG);
+    return write_register_common((dbCommon*)prec, (char*)&prec->rval, 1, menuFtypeLONG);
 }
 
 long write_register_bo(boRecord *prec)
 {
-    return write_register_common((dbCommon*)prec, (const char*)&prec->rval, 1, menuFtypeULONG);
+    return write_register_common((dbCommon*)prec, (char*)&prec->rval, 1, menuFtypeULONG);
 }
 
 long write_register_mbbo(mbboRecord *prec)
 {
-    return write_register_common((dbCommon*)prec, (const char*)&prec->rval, 1, menuFtypeULONG);
+    return write_register_common((dbCommon*)prec, (char*)&prec->rval, 1, menuFtypeULONG);
 }
 
 long write_register_aao(aaoRecord *prec)
 {
-    return write_register_common((dbCommon*)prec, (const char*)prec->bptr, prec->nord, (menuFtype)prec->ftvl);
+    return write_register_common((dbCommon*)prec, (char*)prec->bptr, prec->nord, (menuFtype)prec->ftvl);
 }
 
 long flush_register_bo(boRecord *prec)
