@@ -12,6 +12,8 @@ DBD += feed.dbd
 LIB_LIBS += $(EPICS_BASE_IOC_LIBS)
 LIB_SYS_LIBS += z
 
+GENVERSION = feedVersion.h
+
 SRC_DIRS += $(TOP)/src/util
 LIB_SRCS += jblob.cpp
 LIB_SRCS += zpp.cpp
@@ -61,6 +63,8 @@ endif
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
+
+devmain$(DEP): $(COMMON_DIR)/$(GENVERSION)
 
 ifeq ($(OS_CLASS),Linux)
 cppcheck:

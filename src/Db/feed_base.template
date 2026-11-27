@@ -210,3 +210,15 @@ record(longin, "$(PREF)HELLO-I") {
     field(INP , "@name=$(NAME) reg=HELLO")
     field(SCAN, "2 second")
 }
+
+# Driver VCS information
+record(stringin, "$(PREF)VCS-I") {
+    field(DTYP, "FEED VCS Info")
+    field(INP , "@name=$(NAME) offset=0")
+    field(PINI, "YES")
+}
+record(stringin, "$(PREF)VCS:Date-I") {
+    field(DTYP, "FEED VCS Info")
+    field(INP , "@name=$(NAME) offset=1")
+    field(PINI, "YES")
+}

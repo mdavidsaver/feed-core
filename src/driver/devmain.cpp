@@ -23,6 +23,7 @@
 #include <menuScan.h>
 #include <dbCommon.h>
 #include <menuFtype.h>
+#include <stringinRecord.h>
 #include <stringoutRecord.h>
 #include <longinRecord.h>
 #include <longoutRecord.h>
@@ -34,6 +35,7 @@
 #include <aaiRecord.h>
 #include <aaoRecord.h>
 
+#include "feedVersion.h"
 #include "device.h"
 #include "dev.h"
 
@@ -242,6 +244,26 @@ long read_rtt(aiRecord *prec)
         prec->val = sum;
         prec->udf = isnan(sum);
         return 2;
+    }CATCH()
+}
+
+long read_vcs(stringinRecord *prec)
+{
+    TRY {
+        const char *s = NULL;
+        switch(info->offset) {
+        case 0: s = VCSVERSION; break;
+        case 1: s = VCSVERSION_DATE; break;
+        }
+
+        if(s) {
+            strncpy(prec->val, s, sizeof(prec->val)-1);
+            prec->val[sizeof(prec->val)-1] = '\0';
+        } else {
+            (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "offset= out of range");
+        }
+
+        return 0;
     }CATCH()
 }
 
@@ -464,3 +486,6 @@ DSET(devMbbiFEEDRegState, mbbi, init_common<RecInfo>::fn, get_reg_changed_intr, 
 
 // device-wide special
 DSET(devLiFEEDSync, longin, init_common<SyncInfo>::fn, NULL, read_sync)
+
+// driver status
+DSET(devSiFEEDVCS, stringin, init_common<RecInfo>::fn, NULL, read_vcs);
