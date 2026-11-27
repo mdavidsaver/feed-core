@@ -95,6 +95,7 @@ struct DevReg
 
     // async. record processing waiting on this register
     short stat, sevr;
+    const char *amsg;
     typedef std::list<RegInterest*> records_t;
     records_t records_inprog, // actions waiting on the currently executing op
               records_write,  // actions waiting on the queued write

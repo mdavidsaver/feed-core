@@ -86,6 +86,7 @@ DevReg::DevReg(Device *dev, const JRegister &info, bool bootstrap)
     ,next_send(mem_rx.size())
     ,stat(UDF_ALARM)
     ,sevr(INVALID_ALARM)
+    ,amsg(NULL)
 {}
 
 DevReg::~DevReg()
@@ -334,6 +335,7 @@ void Device::reset(bool error)
         // complete any in-progress async, including for queued writes
         reg->stat = COMM_ALARM;
         reg->sevr = INVALID_ALARM;
+        reg->amsg = "reset";
         reg->process(true);
 
         if(!reg->bootstrap) {
@@ -562,6 +564,7 @@ void Device::handle_process(const std::vector<char>& buf, PrintAddr& addr)
 
             reg->stat = 0;
             reg->sevr = 0;
+            reg->amsg = NULL;
             reg->process(false);
 
             reg->scan_interested();
@@ -646,6 +649,7 @@ void Device::do_timeout(unsigned i)
 
         reg->stat = COMM_ALARM;
         reg->sevr = INVALID_ALARM;
+        reg->amsg = "timeout";
         reg->process(true);
 
         reg->scan_interested();
