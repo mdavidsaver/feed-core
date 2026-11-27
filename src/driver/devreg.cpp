@@ -57,10 +57,10 @@ struct RecRegInfo final : public RecInfo
 };
 
 #define TRY RecInfo *info = static_cast<RecInfo*>(prec->dpvt); if(!info) { \
-    (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM); return ENODEV; } \
+    (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed"); return ENODEV; } \
     Device *device=info->device; (void)device; try
 
-#define CATCH() catch(std::exception& e) { (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM); \
+#define CATCH() catch(std::exception& e) { (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "E:%s", e.what()); \
     errlogPrintf("%s: Error %s\n", prec->name, e.what()); info->cleanup(); return 0; }
 
 
@@ -84,13 +84,17 @@ long write_register_common(dbCommon *prec, char *raw, size_t count, menuFtype ft
         Guard G(device->lock);
 
         if(!info->reg) {
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "no register");
             IFDBG(6, "No association");
         } else if(!info->reg->info.writable) {
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "not writable");
             IFDBG(6, "Not writable");
         } else if(info->rbv && !info->reg->info.readable) {
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "not readable");
             IFDBG(6, "Not readable");
         } else if(info->offset >= info->reg->mem_tx.size()
                 || count > info->reg->mem_tx.size() - info->offset) {
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "out of bounds");
             IFDBG(6, "Array bounds violation offset=%u size=%zu not within size=%zu",
                   (unsigned)info->offset, count, info->reg->mem_tx.size());
         } else {
@@ -150,7 +154,6 @@ long write_register_common(dbCommon *prec, char *raw, size_t count, menuFtype ft
         }
 
         info->cleanup();
-        (void)recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
         return ENODEV;
 
     }CATCH()
@@ -212,6 +215,7 @@ long read_register_common(dbCommon *prec, char *raw, size_t *count, menuFtype ft
         Guard G(device->lock);
 
         if(!info->reg) {
+            (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "No register");
             IFDBG(6, "No association");
 
         } else {
@@ -228,10 +232,13 @@ long read_register_common(dbCommon *prec, char *raw, size_t *count, menuFtype ft
             }
 
             if(!info->rbv && !info->reg->info.readable) {
+                (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "No readable");
                 IFDBG(6, "Not readable");
             } else if(info->rbv && !info->reg->info.writable) {
-                    IFDBG(6, "Not writable");
+                (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "Not writable");
+                IFDBG(6, "Not writable");
             } else if(info->offset >= mem.size()) {
+                (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "out of bounds");
                 IFDBG(6, "Array bounds violation offset=%u not within size=%zu",
                       (unsigned)info->offset, mem.size());
             } else {
@@ -303,7 +310,6 @@ long read_register_common(dbCommon *prec, char *raw, size_t *count, menuFtype ft
         }
 
         info->cleanup();
-        (void)recGblSetSevr(prec, READ_ALARM, INVALID_ALARM);
         return ENODEV;
 
     }CATCH()

@@ -50,10 +50,10 @@ struct SigInfo {
 };
 
 #define TRY SigInfo *info = static_cast<SigInfo*>(prec->dpvt); if(!info || !info->lookup()) { \
-    (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM); return ENODEV; } \
+    (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed"); return ENODEV; } \
     Device *device=info->siginfo->device; (void)device; try
 
-#define CATCH() catch(std::exception& e) { (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM); \
+#define CATCH() catch(std::exception& e) { (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "E:%s", e.what()); \
     errlogPrintf("%s: Error %s\n", prec->name, e.what()); info->cleanup(); return 0; }
 
 static
@@ -99,7 +99,7 @@ long write_signal_offset(longoutRecord *prec)
 {
     TRY {
         if(prec->val<0) {
-            (void)recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "out of bounds");
             return EINVAL;
         }
 
@@ -117,7 +117,7 @@ long write_signal_step(longoutRecord *prec)
 {
     TRY {
         if(prec->val<=0) {
-            (void)recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "out of bounds");
             return EINVAL;
         }
 
@@ -135,7 +135,7 @@ long write_signal_slope(aoRecord *prec)
 {
     TRY {
         if(prec->val<=0) {
-            (void)recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "out of bounds");
             return EINVAL;
         }
 
@@ -156,7 +156,7 @@ long write_signal_size(longoutRecord *prec)
 {
     TRY {
         if(prec->val<=0) {
-            (void)recGblSetSevr(prec, WRITE_ALARM, INVALID_ALARM);
+            (void)recGblSetSevrMsg(prec, WRITE_ALARM, INVALID_ALARM, "out of bounds");
             return EINVAL;
         }
 

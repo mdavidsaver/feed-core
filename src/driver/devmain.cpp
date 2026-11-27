@@ -313,10 +313,12 @@ long read_jblob(aaiRecord *prec)
         }
 
         if(blob->empty()) {
+            (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "No Conn");
             IFDBG(6, "Not connected");
         } else if(blob->size() > prec->nelm) {
             IFDBG(6, "blob size %zu exceeds NELM=%u",
                   blob->size(), (unsigned)prec->nelm);
+            (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Too large");
         } else {
             memcpy(prec->bptr,
                    &(*blob)[0],
@@ -325,7 +327,6 @@ long read_jblob(aaiRecord *prec)
             prec->nord = blob->size();
             return 0;
         }
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
 
         return ENODEV;
     }CATCH()
@@ -421,7 +422,7 @@ long read_sync(longinRecord *prec)
 
 #undef TRY
 #define TRY MetaInfo *info = static_cast<MetaInfo*>(prec->dpvt); if(!info) { \
-    (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM); return ENODEV; } \
+    (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed"); return ENODEV; } \
     Device *device=info->device; (void)device; try
 
 struct MetaInfo : public RecInfo

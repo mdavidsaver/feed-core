@@ -14,10 +14,10 @@
 namespace {
 
 #define TRY RecInfo *info = static_cast<RecInfo*>(prec->dpvt); if(!info) { \
-    (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM); return ENODEV; } \
+    (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed"); return ENODEV; } \
     Device *device=info->device; (void)device; try
 
-#define CATCH() catch(std::exception& e) { (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM); \
+#define CATCH() catch(std::exception& e) { (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "E:%s", e.what()); \
     errlogPrintf("%s: Error %s\n", prec->name, e.what()); info->cleanup(); return 0; }
 
 #define IFDBG(N, FMT, ...) if(prec->tpro>1 || (info->device->debug&(1<<(N)))) errlogPrintf("%s %s : " FMT "\n", logTime(), prec->name, ##__VA_ARGS__)
@@ -126,10 +126,13 @@ long write_test_mask(boRecord *prec)
         Guard G(device->lock);
 
         if(!info->reg) {
+            (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "No register");
             IFDBG(6, "No association");
         } else if(!info->reg->info.readable) {
+            (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "Not readable");
             IFDBG(6, "Not readable");
         } else if(info->offset >= info->reg->mem_rx.size()) {
+            (void)recGblSetSevrMsg(prec, READ_ALARM, INVALID_ALARM, "Out of bounds");
             IFDBG(6, "Array bounds violation offset=%u not within size=%zu",
                   (unsigned)info->offset, info->reg->mem_rx.size());
         } else {
@@ -151,7 +154,6 @@ long write_test_mask(boRecord *prec)
         }
 
         info->cleanup();
-        (void)recGblSetSevr(prec, READ_ALARM, INVALID_ALARM);
         return ENODEV;
 
     }CATCH()

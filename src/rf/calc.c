@@ -23,6 +23,10 @@
 #define MIN(A,B) ((A)<(B) ? (A) : (B))
 #define MAX(A,B) ((A)>(B) ? (A) : (B))
 
+#ifndef DBR_AMSG
+#  define recGblSetSevrMsg(REC, STAT, SEVR, ...) recGblSetSevr(REC, STAT, SEVR)
+#endif
+
 /* wrap arbitrary phase to [-180, 180) */
 static
 double phase_wrap(double pha)
@@ -120,7 +124,7 @@ long update_expr(aSubRecord* prec, calcPriv *priv)
         strcpy(priv->prev, "0");
 
     if(postfix(priv->prev, priv->postfix, &err)) {
-        (void)recGblSetSevr(prec, CALC_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, CALC_ALARM, INVALID_ALARM, "bad expr");
 
         errlogPrintf("%s: Expression error: %s from '%s'\n",
                      prec->name, calcErrorStr(err), priv->prev);
@@ -145,13 +149,13 @@ long init_waveform(aSubRecord* prec)
 
     if(prec->fta != menuFtypeSTRING && prec->fta!=menuFtypeCHAR) {
         errlogPrintf("%s: FTA must be STRING or CHAR\n", prec->name);
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FTA");
         return -1;
     }
 
     priv = calloc(1, sizeof(calcPriv));
     if(!priv) {
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "alloc");
         return -1;
     }
     strcpy(priv->prev, "Something highly unlikely");
@@ -182,13 +186,13 @@ long gen_waveform(aSubRecord* prec)
     epicsUInt32 nelem=0, nin=0;
     calcPriv* priv=prec->dpvt;
     if(!priv) {
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed");
         errlogPrintf("%s: Not initialized\n",prec->name);
         return -1;
     }
 
     if(update_expr(prec, priv)) {
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "expr");
         return -1;
     }
 
@@ -228,7 +232,7 @@ long gen_waveform(aSubRecord* prec)
 
         // calculate
         if (calcPerform(priv->stack, &val, priv->postfix)) {
-            recGblSetSevr(prec, CALC_ALARM, INVALID_ALARM);
+            recGblSetSevrMsg(prec, CALC_ALARM, INVALID_ALARM, "bad calc expr");
         } else prec->udf = isnan(val);
 
         // update outputs from stack
@@ -316,7 +320,7 @@ long convert_iq2ap(aSubRecord* prec)
             || prec->ftva!=menuFtypeDOUBLE
             || prec->ftvb!=menuFtypeDOUBLE)
     {
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FT*");
         return 1;
     }
 
@@ -409,21 +413,21 @@ long convert_ap2iq(aSubRecord* prec)
 
 
     if(prec->dpvt==BADMAGIC) {
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed");
         return 1;
     } else if(prec->dpvt!=MAGIC) {
         // Only do type checks in not already passed
         for(i=0; i<2; i++) {
             if(ft[i]!=menuFtypeDOUBLE) {
                 prec->dpvt=BADMAGIC;
-                (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+                (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FT*");
                 errlogPrintf("%s: FT%c must be DOUBLE\n",
                              prec->name, 'A'+(char)i);
                 return 1;
 
             } else if(ftv[i]!=menuFtypeDOUBLE) {
                 prec->dpvt=BADMAGIC;
-                (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+                (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FTV*");
                 errlogPrintf("%s: FTV%c must be DOUBLE\n",
                              prec->name, 'A'+(char)i);
                 return 1;
@@ -504,14 +508,14 @@ long wf_stats(aSubRecord* prec)
 
 
     if(prec->dpvt==BADMAGIC) {
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed");
         return 1;
     } else if(prec->dpvt!=MAGIC) {
         // Only do type checks in not already passed
         for(i=0; i<4; i++) {
             if(ft[i]!=menuFtypeDOUBLE) {
                 prec->dpvt=BADMAGIC;
-                (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+                (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FT*");
                 errlogPrintf("%s: FT%c must be DOUBLE\n",
                              prec->name, 'A'+(char)i);
                 return 1;
@@ -521,7 +525,7 @@ long wf_stats(aSubRecord* prec)
         for(i=0; i<4; i++) {
             if(ftv[i]!=menuFtypeDOUBLE) {
                 prec->dpvt=BADMAGIC;
-                (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+                (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FTV*");
                 errlogPrintf("%s: FTV%c must be DOUBLE\n",
                              prec->name, 'A'+(char)i);
                 return 1;
@@ -532,7 +536,7 @@ long wf_stats(aSubRecord* prec)
     }
 
     if(len==0) {
-        recGblSetSevr(prec, CALC_ALARM, INVALID_ALARM);
+        recGblSetSevrMsg(prec, CALC_ALARM, INVALID_ALARM, "Zero len");
         return 0;
     }
 
@@ -553,7 +557,7 @@ long wf_stats(aSubRecord* prec)
     }
 
     if(N==0) {
-        recGblSetSevr(prec, CALC_ALARM, INVALID_ALARM);
+        recGblSetSevrMsg(prec, CALC_ALARM, INVALID_ALARM, "empty window");
         return 0;
     }
 
@@ -620,14 +624,14 @@ long unwrap(aSubRecord* prec)
     epicsUInt32 len=MIN(prec->nea, prec->nova);
 
     if(prec->dpvt==BADMAGIC) {
-        (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Init failed");
         return 1;
     } else if(prec->dpvt!=MAGIC) {
         // Only do type checks in not already passed
         if(prec->fta!=menuFtypeDOUBLE &&
                 prec->ftb!=menuFtypeDOUBLE) {
             prec->dpvt=BADMAGIC;
-            (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+            (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FT*");
             errlogPrintf("%s: FTA and FTB must be DOUBLE\n",
                          prec->name);
             return 1;
@@ -635,7 +639,7 @@ long unwrap(aSubRecord* prec)
         }
         if(prec->ftva!=menuFtypeDOUBLE) {
             prec->dpvt=BADMAGIC;
-            (void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+            (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "FTV*");
             errlogPrintf("%s: FTVA must be DOUBLE\n",
                          prec->name);
             return 1;
@@ -645,7 +649,7 @@ long unwrap(aSubRecord* prec)
     }
 
     if(len==0 || prec->neb==0) {
-        recGblSetSevr(prec, CALC_ALARM, INVALID_ALARM);
+        recGblSetSevrMsg(prec, CALC_ALARM, INVALID_ALARM, "zero len");
         return 0;
     }
     thres = *(double*)prec->b;
@@ -704,7 +708,7 @@ long calc_ctrl(aSubRecord* prec)
 		|| prec->ftve!=menuFtypeDOUBLE
 		|| prec->ftvf!=menuFtypeDOUBLE)
 	{
-		(void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Ftype");
 		return 1;
 	}
 
@@ -877,7 +881,7 @@ long calc_df(aSubRecord* prec)
 		|| prec->ftvd!=menuFtypeDOUBLE
 		|| prec->ftve!=menuFtypeDOUBLE)
 	{
-		(void)recGblSetSevr(prec, COMM_ALARM, INVALID_ALARM);
+        (void)recGblSetSevrMsg(prec, COMM_ALARM, INVALID_ALARM, "Ftype");
 		return 1;
 	}
 
@@ -1039,7 +1043,7 @@ long unwrap_fault(aSubRecord* prec)
     }
 
     if(len==0) {
-        recGblSetSevr(prec, CALC_ALARM, INVALID_ALARM);
+        recGblSetSevrMsg(prec, CALC_ALARM, INVALID_ALARM, "Zero length");
         return 0;
     }
 
